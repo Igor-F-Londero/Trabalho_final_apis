@@ -1,6 +1,9 @@
+name: trabalho-final
+
 services:
   api1:
     build: .
+    restart: on-failure
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
       RABBITMQ_URL: amqp://rabbitmq:5672
@@ -13,6 +16,7 @@ services:
 
   api2:
     build: .
+    restart: on-failure
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
       RABBITMQ_URL: amqp://rabbitmq:5672
@@ -25,6 +29,7 @@ services:
 
   api3:
     build: .
+    restart: on-failure
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
       RABBITMQ_URL: amqp://rabbitmq:5672
@@ -37,6 +42,7 @@ services:
 
   consumer-notifications:
     build: .
+    restart: on-failure
     command: node src/messaging/consumers/notificationsConsumer.js
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
@@ -46,6 +52,7 @@ services:
 
   consumer-audit:
     build: .
+    restart: on-failure
     command: node src/messaging/consumers/audit_log.js
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
@@ -57,6 +64,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
+    restart: on-failure
     ports:
       - "8080:80"
     depends_on:
@@ -66,11 +74,10 @@ services:
 
   db:
     image: postgres:16
+    restart: on-failure
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: livros
-    ports:
-      - "5433:5432"
     volumes:
       - livros_data:/var/lib/postgresql/data
     healthcheck:
@@ -81,8 +88,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    restart: on-failure
     ports:
-      - "5672:5672"
       - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
