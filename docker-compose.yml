@@ -1,0 +1,94 @@
+services:
+  api1:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  api2:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  api3:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/livros?schema=public
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  consumer-notifications:
+    build: .
+    command: node src/messaging/consumers/notificationsConsumer.js
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  consumer-audit:
+    build: .
+    command: node src/messaging/consumers/audit_log.js
+    environment:
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - api1
+      - api2
+      - api3
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: livros
+    ports:
+      - "5433:5432"
+    volumes:
+      - livros_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  livros_data:

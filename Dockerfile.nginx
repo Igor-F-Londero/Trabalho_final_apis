@@ -1,0 +1,7 @@
+# imagem oficial do Nginx, já com o binário compilado
+FROM nginx:alpine
+
+# substitui a config padrão pela nossa (load balancer + rate limit)
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
