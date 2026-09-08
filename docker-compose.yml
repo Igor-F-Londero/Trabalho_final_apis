@@ -46,6 +46,7 @@ services:
     command: node src/messaging/consumers/notificationsConsumer.js
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
+      CONSUMER_DELAY_MS: ${CONSUMER_DELAY_MS:-4000}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -56,6 +57,7 @@ services:
     command: node src/messaging/consumers/audit_log.js
     environment:
       RABBITMQ_URL: amqp://rabbitmq:5672
+      CONSUMER_DELAY_MS: ${CONSUMER_DELAY_MS:-4000}
     depends_on:
       rabbitmq:
         condition: service_healthy

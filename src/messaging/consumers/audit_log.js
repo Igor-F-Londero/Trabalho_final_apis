@@ -3,10 +3,16 @@ const { conectarRabbitMQ } = require('../connection');
 async function iniciar() {
     const channel = await conectarRabbitMQ();
 
-    channel.consume('audit_log', (mensagem) => {
+    // CONSUMER_DELAY_MS: atraso proposital antes do ack, só pra demonstração
+    // (deixar a mensagem visível na fila por alguns segundos); 0 = desligado
+    const delayMs = Number(process.env.CONSUMER_DELAY_MS || 0);
+
+    channel.consume('audit_log', async (mensagem) => {
         const dados = JSON.parse(mensagem.content.toString());
 
         console.log('[audit_log]', dados);
+
+        if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
 
         channel.ack(mensagem);
     });
