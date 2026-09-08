@@ -11,6 +11,13 @@ async function iniciar() {
         channel.ack(mensagem);
     });
 
+    // sem isso, se a conexão cair o processo continua de pé mas para de
+    // consumir mensagens silenciosamente, sem que o Docker perceba e reinicie
+    channel.on('close', () => {
+        console.error('Conexão com o RabbitMQ perdida, reconectando em 2s...');
+        setTimeout(iniciar, 2000);
+    });
+
     console.log('Consumer de audit_log aguardando mensagens...');
 }
 
