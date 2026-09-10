@@ -2,18 +2,19 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { publicarMensagem } = require("../messaging/producer");
 
-const router = express.Router();
+const rotas = express.Router();
 const prisma = new PrismaClient();
 
-router.get("/", async (req, res) => {
+rotas.get("/", async (req, res) => {
   const dados = await prisma.livro.findMany();
   res.status(200).json(dados);
 });
 
-router.post("/", async (req, res) => {
-  // destruturando o objeto req.body para pegar os dados do livro
+rotas.post("/", async (req, res) => {
+  // destruturando o objeto req.body pra pegar os dados do livro  
   const { titulo, autor, anoPublicacao, preco } = req.body;
 
+  // validar se os dados estão corretos antes de criar o livro
   if (
     titulo &&
     autor &&
@@ -30,52 +31,52 @@ router.post("/", async (req, res) => {
     res.status(201).json(livro);
   } else {
     // return antes de res.status(400) pra evitar que o código continue executando após enviar a resposta
-    return res.status(400).json({ error: "Dados inválidos" });
+    return res.status(400).json({ erro: "Dados inválidos" });
   }
 });
 
-router.get("/:id", async (req, res) => {
+rotas.get("/:id", async (req, res) => {
   // req.params.id é uma string, então precisamos converter para número
-  const idNumber = Number(req.params.id); // embrulhando o id string em number
-  const livro = await prisma.livro.findUnique({ where: { id: idNumber } });
+  const idNumero = Number(req.params.id); // embrulhando o id string em number
+  const livro = await prisma.livro.findUnique({ where: { id: idNumero } });
 
   if (livro === null) {
-    return res.status(404).json({ erro: "ERRO:NULO" });
+    return res.status(404).json({ erro: "Livro não encontrado" });
   }
 
   res.status(200).json(livro);
 });
 
-router.put("/:id", async (req, res) => {
-  const idNumber = Number(req.params.id);
+rotas.put("/:id", async (req, res) => {
+  const idNumero = Number(req.params.id);
   const { titulo, autor, anoPublicacao, preco, disponivel } = req.body;
-  const livro = await prisma.livro.findUnique({ where: { id: idNumber } });
+  const livro = await prisma.livro.findUnique({ where: { id: idNumero } });
 
   if (livro === null) {
-    return res.status(404).json({ erro: "ERRO:NULO" });
+    return res.status(404).json({ erro: "Livro não encontrado" });
   }
 
-  const seExiste = await prisma.livro.update({
-    where: { id: idNumber },
+  const livroAtualizado = await prisma.livro.update({
+    where: { id: idNumero },
     data: { titulo, autor, anoPublicacao, preco, disponivel },
   });
 
-  await publicarMensagem("audit_log", { acao: "UPDATE", livroId: idNumber, quando: new Date() });
+  await publicarMensagem("audit_log", { acao: "UPDATE", livroId: idNumero, quando: new Date() });
 
-  res.status(200).json(seExiste);
+  res.status(200).json(livroAtualizado);
 });
 
-router.delete("/:id", async (req, res) => {
-  const idNumber = Number(req.params.id);
-  const livro = await prisma.livro.findUnique({ where: { id: idNumber } });
+rotas.delete("/:id", async (req, res) => {
+  const idNumero = Number(req.params.id);
+  const livro = await prisma.livro.findUnique({ where: { id: idNumero } });
 
   if (livro === null) {
-    return res.status(404).json({ erro: "ERRO:NULO" });
+    return res.status(404).json({ erro: "Livro não encontrado" });
   }
-  const seExiste = await prisma.livro.delete({ where: { id: idNumber } });
+  await prisma.livro.delete({ where: { id: idNumero } });
 
-  await publicarMensagem("audit_log", { acao: "DELETE", livroId: idNumber, quando: new Date() });
+  await publicarMensagem("audit_log", { acao: "DELETE", livroId: idNumero, quando: new Date() });
 
   res.status(204).send();
 });
-module.exports = router;
+module.exports = rotas;

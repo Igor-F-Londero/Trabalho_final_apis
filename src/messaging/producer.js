@@ -1,21 +1,21 @@
 const { conectarRabbitMQ } = require('./connection');
-let channel;
+let canal;
 
-async function getChannel() {
-    if (!channel) {
-        channel = await conectarRabbitMQ();
-        // se a conexão cair, descarta o channel em cache pra forçar
+async function obterCanal() {
+    if (!canal) {
+        canal = await conectarRabbitMQ();
+        // se a conexão cair, descarta o canal em cache pra forçar
         // reconexão na próxima publicação, em vez de ficar publicando
-        // num channel morto pra sempre
-        channel.on('close', () => { channel = null; });
-        channel.on('error', () => { channel = null; });
+        // num canal morto pra sempre
+        canal.on('close', () => { canal = null; });
+        canal.on('error', () => { canal = null; });
     }
-    return channel;
+    return canal;
 }
 
 async function publicarMensagem(fila, mensagem) {
-    const ch = await getChannel();
-    ch.sendToQueue(fila, Buffer.from(JSON.stringify(mensagem)));
+    const canalAtual = await obterCanal();
+    canalAtual.sendToQueue(fila, Buffer.from(JSON.stringify(mensagem)));
 }
 
 module.exports = { publicarMensagem };

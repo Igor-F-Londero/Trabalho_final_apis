@@ -1,25 +1,25 @@
 const { conectarRabbitMQ } = require('../connection');
 
 async function iniciar() {
-    const channel = await conectarRabbitMQ();
+    const canal = await conectarRabbitMQ();
 
     // CONSUMER_DELAY_MS: atraso proposital antes do ack, só pra demonstração
     // (deixar a mensagem visível na fila por alguns segundos); 0 = desligado
-    const delayMs = Number(process.env.CONSUMER_DELAY_MS || 0);
+    const atrasoMs = Number(process.env.CONSUMER_DELAY_MS || 0);
 
-    channel.consume('audit_log', async (mensagem) => {
+    canal.consume('audit_log', async (mensagem) => {
         const dados = JSON.parse(mensagem.content.toString());
 
         console.log('[audit_log]', dados);
 
-        if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+        if (atrasoMs > 0) await new Promise((resolve) => setTimeout(resolve, atrasoMs));
 
-        channel.ack(mensagem);
+        canal.ack(mensagem);
     });
 
     // sem isso, se a conexão cair o processo continua de pé mas para de
     // consumir mensagens silenciosamente, sem que o Docker perceba e reinicie
-    channel.on('close', () => {
+    canal.on('close', () => {
         console.error('Conexão com o RabbitMQ perdida, reconectando em 2s...');
         setTimeout(iniciar, 2000);
     });

@@ -16,15 +16,15 @@ async function conectarComRetry() {
 }
 
 async function conectarRabbitMQ() {
-    const connection = await conectarComRetry();
-    const channel = await connection.createChannel();
+    const conexao = await conectarComRetry();
+    const canal = await conexao.createChannel();
 
-    await channel.assertQueue('notifications', { durable: true });
-    await channel.assertQueue('audit_log', { durable: true });
+    await canal.assertQueue('notifications', { durable: true });
+    await canal.assertQueue('audit_log', { durable: true });
 
-    connection.on('error', (erro) => console.error('Erro na conexão com o RabbitMQ:', erro.message));
+    conexao.on('error', (erro) => console.error('Erro na conexão com o RabbitMQ:', erro.message));
 
-    return channel;
+    return canal;
 }
 
 module.exports = { conectarRabbitMQ };
