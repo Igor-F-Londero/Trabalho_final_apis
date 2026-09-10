@@ -24,13 +24,13 @@ Depois de subir, a API está acessível em `http://localhost:8080`.
 | Porta (host) | Serviço | Descrição |
 |---|---|---|
 | `8080` | Nginx (gateway) | Ponto de entrada único da API — todo tráfego externo passa por aqui |
-| `5433` | PostgreSQL | Exposta para inspeção/debug local (ex.: cliente SQL); a API acessa o banco pela rede interna do Compose |
-| `5672` | RabbitMQ (AMQP) | Porta do protocolo usada pelos producers/consumers |
 | `15672` | RabbitMQ (painel web) | Interface de administração — acesse em `http://localhost:15672` (usuário/senha padrão: `guest`/`guest`) |
 
-As 3 instâncias da API (`api1`, `api2`, `api3`) **não** expõem porta para o
-host — só são alcançáveis através do Nginx, que é o único ponto de entrada
-externo por design.
+As 3 instâncias da API (`api1`, `api2`, `api3`), o PostgreSQL e a porta AMQP
+do RabbitMQ **não** expõem porta para o host — só são alcançáveis pela rede
+interna do Compose. Isso reduz a chance de conflito com outros serviços já
+rodando na máquina, já que só as duas portas realmente necessárias pra uso
+externo (a própria API e o painel de administração) ficam expostas.
 
 ## Variáveis de ambiente
 
@@ -42,6 +42,7 @@ para rodar via Docker):
 | `DATABASE_URL` | `postgresql://postgres:postgres@db:5432/livros?schema=public` | String de conexão do Prisma com o Postgres |
 | `RABBITMQ_URL` | `amqp://rabbitmq:5672` | Endereço do broker RabbitMQ |
 | `PORT` | `3000` | Porta interna em que cada instância da API escuta |
+| `CONSUMER_DELAY_MS` | `4000` | Atraso proposital (ms) antes do `ack` nos consumers — só para fins de demonstração visual da fila; `0` desativa |
 
 Para rodar a API **fora** do Docker (desenvolvimento local), crie um `.env`
 na raiz com `DATABASE_URL` apontando para um Postgres acessível localmente —
@@ -97,6 +98,19 @@ dependências são idênticos, não fazia sentido manter Dockerfiles duplicados.
 
 As mensagens são publicadas **depois** da escrita no banco ser confirmada com
 sucesso, evitando notificar sobre um estado que não chegou a existir de fato.
+
+### Resiliência na conexão com o RabbitMQ
+
+Mesmo com o `healthcheck` do RabbitMQ marcando o container como saudável, o
+listener AMQP pode ainda não estar pronto para aceitar conexões no exato
+instante em que a API ou os consumers tentam se conectar — uma corrida de
+largada mais provável em máquinas mais lentas. Duas camadas cobrem isso:
+
+- Nível de aplicação: [connection.js](src/messaging/connection.js) tenta
+  reconectar a cada 2 segundos até conseguir, em vez de falhar de imediato.
+- Nível de infraestrutura: `restart: on-failure` em todos os serviços do
+  `docker-compose.yml`, como rede de segurança caso o processo ainda assim
+  encerre de forma inesperada.
 
 ### Containers sem Dockerfile próprio
 
