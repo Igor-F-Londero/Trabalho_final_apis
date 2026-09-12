@@ -11,7 +11,7 @@ rotas.get("/", async (req, res) => {
 });
 
 rotas.post("/", async (req, res) => {
-  // destruturando o objeto req.body pra pegar os dados do livro  
+  // destruturando o objeto req.body pra pegar os dados do livro
   const { titulo, autor, anoPublicacao, preco } = req.body;
 
   // validar se os dados estão corretos antes de criar o livro
@@ -26,7 +26,11 @@ rotas.post("/", async (req, res) => {
     });
 
     await publicarMensagem("notifications", { evento: "livro_criado", livro });
-    await publicarMensagem("audit_log", { acao: "CREATE", livroId: livro.id, quando: new Date() });
+    await publicarMensagem("audit_log", {
+      acao: "CREATE",
+      livroId: livro.id,
+      quando: new Date(),
+    });
 
     res.status(201).json(livro);
   } else {
@@ -61,7 +65,11 @@ rotas.put("/:id", async (req, res) => {
     data: { titulo, autor, anoPublicacao, preco, disponivel },
   });
 
-  await publicarMensagem("audit_log", { acao: "UPDATE", livroId: idNumero, quando: new Date() });
+  await publicarMensagem("audit_log", {
+    acao: "UPDATE",
+    livroId: idNumero,
+    quando: new Date(),
+  });
 
   res.status(200).json(livroAtualizado);
 });
@@ -75,7 +83,11 @@ rotas.delete("/:id", async (req, res) => {
   }
   await prisma.livro.delete({ where: { id: idNumero } });
 
-  await publicarMensagem("audit_log", { acao: "DELETE", livroId: idNumero, quando: new Date() });
+  await publicarMensagem("audit_log", {
+    acao: "DELETE",
+    livroId: idNumero,
+    quando: new Date(),
+  });
 
   res.status(204).send();
 });
